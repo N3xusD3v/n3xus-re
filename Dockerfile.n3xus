@@ -1,0 +1,19 @@
+# Site estático do REA (website/) para o Coolify da N3xus.
+# O repositório é um servidor MCP (stdio); a única parte web é o site gerado em website/_site.
+FROM python:3.12-slim AS build
+RUN apt-get update \
+ && apt-get install --no-install-recommends -y libcairo2 fonts-dejavu-core \
+ && rm -rf /var/lib/apt/lists/*
+WORKDIR /src
+COPY website/requirements.txt website/requirements.txt
+RUN pip install --no-cache-dir -r website/requirements.txt
+COPY scripts/ scripts/
+COPY website/ website/
+COPY docs/ docs/
+COPY README.md CONTRIBUTING.md package.json ./
+RUN python3 scripts/prepare-website.py
+
+FROM nginx:1.29-alpine
+COPY nginx.n3xus.conf /etc/nginx/conf.d/default.conf
+COPY --from=build /src/website/_site /usr/share/nginx/html
+EXPOSE 80
